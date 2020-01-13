@@ -1,4 +1,4 @@
-module github.com/kkdai/youtube
+module github.com/fifarafa/youtube
 
 go 1.6
 

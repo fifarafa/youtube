@@ -7,7 +7,7 @@ import (
 	"os/user"
 	"path/filepath"
 
-	. "github.com/kkdai/youtube"
+	. "github.com/fifarafa/youtube"
 )
 
 //ExampleDownload : Example code for how to use this package for download video.

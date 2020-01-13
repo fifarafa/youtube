@@ -7,7 +7,7 @@ import (
 	"os/user"
 	"path/filepath"
 
-	. "github.com/kkdai/youtube"
+	. "github.com/fifarafa/youtube"
 )
 
 const usageString string = `Usage: youtubedr [OPTION] [URL]
