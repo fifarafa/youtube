@@ -67,7 +67,7 @@ func (y *Youtube) DecodeURL(url string) error {
 }
 
 //StartDownload : Starting download video to specific address.
-func (y *Youtube) StartDownload(destFile string) error {
+func (y *Youtube) StartDownload(destFile string) (io.ReadCloser, error) {
 	//download highest resolution on [0]
 	err := errors.New("Empty stream list")
 	for _, v := range y.StreamList {
@@ -75,16 +75,16 @@ func (y *Youtube) StartDownload(destFile string) error {
 		y.log(fmt.Sprintln("Download url=", url))
 
 		y.log(fmt.Sprintln("Download to file=", destFile))
-		err = y.videoDLWorker(destFile, url)
+		res, err := y.videoDLWorker(url)
 		if err == nil {
-			break
+			return res, nil
 		}
 	}
-	return err
+	return nil, err
 }
 
 //StartDownloadWithQuality : Starting download video with specific quality.
-func (y *Youtube) StartDownloadWithQuality(destFile string, quality string) error {
+func (y *Youtube) StartDownloadWithQuality(destFile string, quality string) (io.ReadCloser, error) {
 	//download highest resolution on [0]
 	err := errors.New("Empty stream list")
 	for _, v := range y.StreamList {
@@ -92,9 +92,9 @@ func (y *Youtube) StartDownloadWithQuality(destFile string, quality string) erro
 			url := v["url"]
 			y.log(fmt.Sprintln("Download url=", url))
 			y.log(fmt.Sprintln("Download to file=", destFile))
-			err = y.videoDLWorker(destFile, url)
+			res, err := y.videoDLWorker(url)
 			if err == nil {
-				break
+				return res, nil
 			}
 		}
 	}
@@ -102,11 +102,11 @@ func (y *Youtube) StartDownloadWithQuality(destFile string, quality string) erro
 	if err != nil {
 		return y.StartDownload(destFile)
 	}
-	return err
+	return nil, err
 }
 
 //StartDownloadFile : Starting download video on my download.
-func (y *Youtube) StartDownloadFile() error {
+func (y *Youtube) StartDownloadFile() (io.ReadCloser, error) {
 	//download highest resolution on [0]
 	err := errors.New("Empty stream list")
 	for _, v := range y.StreamList {
@@ -118,12 +118,12 @@ func (y *Youtube) StartDownloadFile() error {
 		destFile := filepath.Join(filepath.Join(usr.HomeDir, "Movies", "youtubedr"), fileName)
 		y.log(fmt.Sprintln("Download to file=", destFile))
 
-		err = y.videoDLWorker(destFile, url)
+		res, err := y.videoDLWorker(url)
 		if err == nil {
-			break
+			return res, nil
 		}
 	}
-	return err
+	return nil, err
 }
 
 func (y *Youtube) parseVideoInfo() error {
@@ -281,40 +281,41 @@ func (y *Youtube) Write(p []byte) (n int, err error) {
 	}
 	return
 }
-func (y *Youtube) videoDLWorker(destFile string, target string) error {
+func (y *Youtube) videoDLWorker(target string) (io.ReadCloser, error) {
 
 	httpClient, err := y.getHTTPClient()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	resp, err := httpClient.Get(target)
 	if err != nil {
 		y.log(fmt.Sprintf("Http.Get\nerror: %s\ntarget: %s\n", err, target))
-		return err
+		return nil, err
 	}
-	defer resp.Body.Close()
+	//TODO return cleanup function that closes the body
+	//defer resp.Body.Close()
 	y.contentLength = float64(resp.ContentLength)
 
 	if resp.StatusCode != 200 {
 		y.log(fmt.Sprintf("reading answer: non 200[code=%v] status code received: '%v'", resp.StatusCode, err))
-		return errors.New("non 200 status code received")
+		return nil, errors.New("non 200 status code received")
 	}
-	err = os.MkdirAll(filepath.Dir(destFile), 0755)
-	if err != nil {
-		return err
-	}
-	out, err := os.Create(destFile)
-	if err != nil {
-		return err
-	}
-	mw := io.MultiWriter(out, y)
-	_, err = io.Copy(mw, resp.Body)
-	if err != nil {
-		y.log(fmt.Sprintln("download video err=", err))
-		return err
-	}
-	return nil
+	//err = os.MkdirAll(filepath.Dir(destFile), 0755)
+	//if err != nil {
+	//	return err
+	//}
+	//out, err := os.Create(destFile)
+	//if err != nil {
+	//	return err
+	//}
+	//mw := io.MultiWriter(out, y)
+	//_, err = io.Copy(y, resp.Body)
+	//if err != nil {
+	//	y.log(fmt.Sprintln("download video err=", err))
+	//	return err
+	//}
+	return resp.Body, nil
 }
 
 func (y *Youtube) log(logText string) {
